@@ -2,6 +2,7 @@
 import mongoose from 'mongoose';
 import { FAQ, KnowledgeDoc } from '../models/Knowledge';
 import { sampleFAQs, sampleKnowledgeDocs } from '../../../src/mock/data';
+import { sendInternalServerError } from '../../httpErrors';
 
 let memoryFaqs = [...sampleFAQs];
 let memoryDocs = [...sampleKnowledgeDocs];
@@ -14,8 +15,8 @@ export const getFAQs = async (_req: Request, res: Response) => {
       return res.json({ success: true, data: list });
     }
     return res.json({ success: true, data: memoryFaqs });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
+  } catch (error) {
+    return sendInternalServerError(res, error, 'List FAQs');
   }
 };
 
@@ -35,8 +36,8 @@ export const createFAQ = async (req: Request, res: Response) => {
     }
     memoryFaqs.unshift(item as any);
     return res.json({ success: true, data: item });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
+  } catch (error) {
+    return sendInternalServerError(res, error, 'Create FAQ');
   }
 };
 
@@ -48,8 +49,8 @@ export const deleteFAQ = async (req: Request, res: Response) => {
     }
     memoryFaqs = memoryFaqs.filter(f => f.id !== id);
     return res.json({ success: true, message: 'Đã xóa FAQ' });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
+  } catch (error) {
+    return sendInternalServerError(res, error, 'Delete FAQ');
   }
 };
 
@@ -61,8 +62,8 @@ export const getDocs = async (_req: Request, res: Response) => {
       return res.json({ success: true, data: list });
     }
     return res.json({ success: true, data: memoryDocs });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
+  } catch (error) {
+    return sendInternalServerError(res, error, 'List knowledge documents');
   }
 };
 
@@ -74,7 +75,7 @@ export const addDoc = async (req: Request, res: Response) => {
       name,
       size: size || '1.0 MB',
       type: type || 'pdf',
-      status: 'trained',
+      status: 'trained' as const,
       trainedAt: 'Vừa xong',
       chunksCount: Math.floor(Math.random() * 80) + 40
     };
@@ -84,7 +85,7 @@ export const addDoc = async (req: Request, res: Response) => {
     }
     memoryDocs.unshift(doc as any);
     return res.json({ success: true, data: doc });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
+  } catch (error) {
+    return sendInternalServerError(res, error, 'Add knowledge document');
   }
 };

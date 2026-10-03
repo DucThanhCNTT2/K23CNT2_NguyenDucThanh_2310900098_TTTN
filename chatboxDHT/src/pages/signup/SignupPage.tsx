@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Building2, User, Mail, Phone, Lock, ArrowRight } from 'lucide-react';
 import { AuthLayout } from '../../layout/AuthLayout';
 import { apiService } from '../../services/api';
+import { SocialAuthButtons } from '../../components/auth/SocialAuthButtons';
 
 export const SignupPage: React.FC = () => {
   const navigate = useNavigate();
@@ -62,7 +63,15 @@ export const SignupPage: React.FC = () => {
       title="Đăng Ký Tài Khoản"
       subtitle="Bắt đầu 14 ngày dùng thử Chatbot AI Đa Kênh không giới hạn"
     >
-      <form onSubmit={handleSubmit} className="space-y-3.5">
+      <div className="mb-5">
+        <SocialAuthButtons intent="signup" />
+        <div className="mt-5 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+          <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+          <span>Hoặc đăng ký bằng email</span>
+          <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+        </div>
+      </div>
+      <form onSubmit={handleSubmit} className="auth-card w-full max-w-2xl mx-auto space-y-3.5 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-2xl shadow-slate-900/10 dark:border-slate-800 dark:bg-slate-900 sm:p-8">
         {errorMsg && <div className="p-3 rounded-xl bg-rose-50 text-rose-600 text-xs">{errorMsg}</div>}
         <div>
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -200,7 +209,7 @@ export const SignupPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+            className="auth-submit w-full py-3 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
           >
             {loading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>

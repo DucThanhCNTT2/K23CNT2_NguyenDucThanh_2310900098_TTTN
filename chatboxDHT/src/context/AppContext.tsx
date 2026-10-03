@@ -9,6 +9,7 @@ import {
 } from '../types';
 import { currentUser as mockUser, initialConversations, sampleMessages } from '../mock/data';
 import { apiService } from '../services/api';
+import { io } from 'socket.io-client';
 
 interface AppContextType {
   theme: string;
@@ -46,8 +47,8 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState('light');
-  const [isWidgetOpen, setWidgetOpen] = useState(true);
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+  const [isWidgetOpen, setWidgetOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations || []);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(
     initialConversations?.[0]?.id || 'conv_01'
@@ -58,19 +59,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [messages, setMessages] = useState<Record<string, Message[]>>(
     sampleMessages as Record<string, Message[]>
   );
-const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
-  const savedUser = localStorage.getItem('user');
-  if (savedUser) {
-    try {
-      const parsedUser = JSON.parse(savedUser);
-      // Ưu tiên lấy trực tiếp thông tin user mới từ localStorage nếu có đầy đủ id/email
-      return parsedUser; 
-    } catch (e) {
-      console.error("Lỗi parse user từ localStorage", e);
+  
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      try {
+        return JSON.parse(savedUser);
+      } catch {
+        console.error('Could not parse the saved user profile.');
+      }
     }
-  }
-  return mockUser;
-});
+    return mockUser;
+  });
 
   const updateCurrentUser = (userData: Partial<UserProfile>) => {
     setCurrentUser((prev) => {
@@ -85,8 +85,93 @@ const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
     conversations.find((conversation) => conversation.id === activeConversationId) || null;
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+    setTheme((prev) => {
+      const nextTheme = prev === 'light' ? 'dark' : 'light';
+      localStorage.setItem('theme', nextTheme);
+      return nextTheme;
+    });
   };
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    document.documentElement.style.colorScheme = theme;
+  }, [theme]);
+
+  // Lắng nghe sự kiện Socket.io Realtime cho Admin
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token || !['admin', 'agent', 'supervisor'].includes(currentUser.role)) return;
+    const socket = io({ auth: { token } });
+
+    socket.on('new_message', (data: any) => {
+      const incomingMessage: Message = {
+        id: data.message.id || `msg_${Date.now()}`,
+        conversationId: data.conversationId,
+        sender: data.message.sender || 'bot',
+        senderName: data.message.senderName,
+        senderAvatar: data.message.senderAvatar,
+        content: data.message.content || data.message.text || '',
+        timestamp: data.message.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: data.message.status || 'delivered'
+      };
+
+      setMessages((prevMessages) => {
+        const currentList = prevMessages[data.conversationId] || [];
+        if (currentList.some((message) => message.id === incomingMessage.id)) {
+          return prevMessages;
+        }
+        return {
+          ...prevMessages,
+          [data.conversationId]: [...currentList, incomingMessage]
+        };
+      });
+
+      setConversations((prevConvs) => {
+        const conversationIndex = prevConvs.findIndex((conversation) => conversation.id === data.conversationId);
+        
+        if (conversationIndex !== -1) {
+          const updatedConversations = [...prevConvs];
+          const existingConversation = updatedConversations[conversationIndex];
+          updatedConversations[conversationIndex] = {
+            ...existingConversation,
+            channel: data.channel || data.customer?.channel || existingConversation.channel,
+            customer: { ...existingConversation.customer, ...data.customer },
+            status: data.status || existingConversation.status,
+            isBotHandling: data.isBotHandling ?? existingConversation.isBotHandling,
+            lastMessage: incomingMessage,
+            unreadCount: data.unreadCount ?? (data.message.sender === 'user'
+              ? (existingConversation.unreadCount || 0) + 1
+              : existingConversation.unreadCount),
+            updatedAt: 'Vừa xong'
+          };
+          return updatedConversations;
+        } else {
+          // Ép kiểu tường minh bằng as unknown as Conversation để tránh hoàn toàn lỗi TS
+          const newConv = {
+            id: data.conversationId,
+            channel: data.channel || data.customer?.channel || 'website',
+            customer: {
+              ...(data.customer || {}),
+              id: data.customer?.id || 'guest',
+              name: data.customer?.name || 'Khách hàng mới',
+              avatar: data.customer?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+            },
+            status: data.status || 'bot_active',
+            isBotHandling: data.isBotHandling ?? true,
+            unreadCount: data.unreadCount ?? (data.message.sender === 'user' ? 1 : 0),
+            lastMessage: incomingMessage,
+            updatedAt: 'Vừa xong'
+          } as unknown as Conversation;
+
+          return [newConv, ...prevConvs];
+        }
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [currentUser]);
 
   useEffect(() => {
     const fetchApiConversations = async () => {
@@ -152,24 +237,38 @@ const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
 
     try {
       const data = await apiService.sendConversationMessage(conversationId, content, sender);
-      if (!data) return;
+      if (!data) {
+        setMessages((previous) => ({
+          ...previous,
+          [conversationId]: (previous[conversationId] || []).map((message) =>
+            message.id === optimisticMessage.id ? { ...message, status: 'failed' } : message
+          )
+        }));
+        return;
+      }
 
       const responseMessages: Message[] =
         'userMessage' in data
           ? [data.userMessage, data.botReply]
           : [data];
+      const responseIds = new Set(responseMessages.map((message) => message.id));
 
       setMessages((previous) => ({
         ...previous,
         [conversationId]: [
           ...(previous[conversationId] || []).filter(
-            (message) => message.id !== optimisticMessage.id
+            (message) => message.id !== optimisticMessage.id && !responseIds.has(message.id)
           ),
           ...responseMessages
         ]
       }));
     } catch {
-      // The optimistic message remains visible when the API is offline.
+      setMessages((previous) => ({
+        ...previous,
+        [conversationId]: (previous[conversationId] || []).map((message) =>
+          message.id === optimisticMessage.id ? { ...message, status: 'failed' } : message
+        )
+      }));
     }
   };
 

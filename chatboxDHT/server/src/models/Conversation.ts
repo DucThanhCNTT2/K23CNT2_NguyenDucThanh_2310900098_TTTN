@@ -1,6 +1,7 @@
 ﻿import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IConversation extends Document {
+  id: string;
   customer: any;
   channel: 'website' | 'facebook' | 'zalo';
   status: 'pending' | 'bot_active' | 'assigned' | 'resolved';
@@ -12,6 +13,7 @@ export interface IConversation extends Document {
   };
   isBotHandling: boolean;
   unreadCount: number;
+  messages: any[]; 
   lastMessage: any;
   rating?: {
     score: number;
@@ -23,6 +25,7 @@ export interface IConversation extends Document {
 }
 
 const ConversationSchema = new Schema<IConversation>({
+  id: { type: String, required: true, unique: true, sparse: true, index: true },
   customer: { type: Schema.Types.Mixed, required: true },
   channel: { type: String, enum: ['website', 'facebook', 'zalo'], required: true },
   status: { type: String, enum: ['pending', 'bot_active', 'assigned', 'resolved'], default: 'pending' },
@@ -34,6 +37,7 @@ const ConversationSchema = new Schema<IConversation>({
   },
   isBotHandling: { type: Boolean, default: true },
   unreadCount: { type: Number, default: 0 },
+  messages: [{ type: Schema.Types.Mixed }], // <-- 2. Khai báo mảng messages trong Schema để lưu lịch sử chat
   lastMessage: { type: Schema.Types.Mixed },
   rating: {
     score: Number,

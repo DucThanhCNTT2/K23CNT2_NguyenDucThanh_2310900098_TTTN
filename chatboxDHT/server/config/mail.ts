@@ -1,8 +1,8 @@
-import nodemailer from 'nodemailer';
+import nodemailer, { type Transporter } from 'nodemailer';
 import { env } from './env';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-let transporter: nodemailer.Transporter | null = null;
+let transporter: Transporter | null = null;
 
 function createMailTransporter() {
   if (transporter) {

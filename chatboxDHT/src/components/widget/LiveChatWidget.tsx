@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, X, Minus, RefreshCw, MessageSquare, Sparkles, ShoppingBag, Trash2 } from 'lucide-react';
+import { Send, Bot, X, Minus, RefreshCw, MessageSquare, Sparkles, ShoppingBag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
-import { apiService } from '../../services/api';
+import { apiService, type WidgetMessage } from '../../services/api';
 
 export const LiveChatWidget: React.FC = () => {
   const appContext = useApp();
@@ -10,12 +10,12 @@ export const LiveChatWidget: React.FC = () => {
   const setWidgetOpen = appContext?.setWidgetOpen ?? (() => {});
   const navigate = useNavigate();
 
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<WidgetMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [widgetError, setWidgetError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const convId = 'conv_01'; // ID cuộc trò chuyện đồng bộ với Nguyễn Thanh Tùng ở Dashboard
+  const loadingRef = useRef(false);
 
   const defaultStarterPrompts = [
     'Báo giá gói Pro',
@@ -29,10 +29,11 @@ export const LiveChatWidget: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Tải danh sách tin nhắn từ MongoDB Backend
+  // Tải lịch sử gắn với cookie phiên widget do server ký.
   const fetchMessages = async () => {
     try {
-      const data = await apiService.getMessages(convId);
+      const data = await apiService.getWidgetMessages();
+      setWidgetError('');
       if (data && data.length > 0) {
         setMessages(data);
       } else {
@@ -50,16 +51,20 @@ export const LiveChatWidget: React.FC = () => {
           }
         ]);
       }
-    } catch (err) {
-      console.error('Lỗi tải tin nhắn:', err);
+    } catch {
+      setWidgetError('Không thể tải hội thoại. Vui lòng thử đồng bộ lại.');
+      console.error('Không thể tải tin nhắn.');
     }
   };
 
   useEffect(() => {
+    if (!isWidgetOpen) return;
     fetchMessages();
-    const interval = setInterval(fetchMessages, 2500);
+    const interval = setInterval(() => {
+      if (!loadingRef.current) void fetchMessages();
+    }, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isWidgetOpen]);
 
   useEffect(() => {
     scrollToBottom();
@@ -71,47 +76,42 @@ export const LiveChatWidget: React.FC = () => {
     if (!userText || loading) return;
 
     setInput('');
-    const tempUserMsg = {
-      id: 'temp_' + Date.now(),
+    const tempUserMsg: WidgetMessage = {
+      id: 'pending-user-message',
       sender: 'user',
       content: userText,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
     setMessages(prev => [...prev, tempUserMsg]);
+    setWidgetError('');
     setLoading(true);
+    loadingRef.current = true;
 
     try {
-      const result = await apiService.sendConversationMessage(convId, userText, 'user');
-      if (result && result.botReply) {
+      const result = await apiService.sendWidgetMessage(userText);
+      if (result?.botReply) {
         setMessages(prev => {
           const filtered = prev.filter(m => m.id !== tempUserMsg.id);
-          return [...filtered, result.userMessage || tempUserMsg, result.botReply];
+          return [
+            ...filtered,
+            result.userMessage,
+            result.botReply
+          ];
         });
       } else {
+        setMessages((previous) => previous.filter((message) => message.id !== tempUserMsg.id));
         await fetchMessages();
+        setWidgetError('Tin nhắn chưa gửi được. Vui lòng thử lại sau giây lát.');
       }
-    } catch (err) {
-      console.error('Lỗi gửi tin nhắn:', err);
+    } catch {
+      console.error('Không thể gửi tin nhắn.');
       await fetchMessages();
+      setWidgetError('Tin nhắn chưa gửi được. Vui lòng thử lại sau giây lát.');
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
-  };
-
-  const handleResetChat = () => {
-    setMessages([
-      { 
-        id: 'reset_' + Date.now(), 
-        sender: 'bot', 
-        content: 'Dạ xin chào Anh/Chị! Cuộc hội thoại mới đã sẵn sàng. Em là trợ lý AI của DHT ChatAI, Anh/Chị đang quan tâm đến tính năng hay câu hỏi nào ạ?',
-        quickReplies: [
-          { id: 'qr_p', label: 'Báo giá các gói', payload: 'pricing' },
-          { id: 'qr_z', label: 'Tích hợp Zalo & Fanpage', payload: 'zalo' },
-          { id: 'qr_t', label: 'Kích hoạt dùng thử 14 ngày', payload: 'trial' }
-        ]
-      }
-    ]);
   };
 
   // Khi widget đang đóng -> Hiển thị nút Nổi Floating Action Button góc phải
@@ -120,7 +120,8 @@ export const LiveChatWidget: React.FC = () => {
       <button
         onClick={() => setWidgetOpen(true)}
         className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-tr from-indigo-600 via-indigo-600 to-purple-600 text-white shadow-xl shadow-indigo-500/35 flex items-center justify-center hover:scale-110 active:scale-95 transition-all group cursor-pointer"
-        title="Mở khung hỗ trợ AI 24/7"
+        aria-label="Mở khung hỗ trợ AI"
+        title="Mở khung hỗ trợ AI"
       >
         <MessageSquare className="w-6 h-6 group-hover:rotate-12 transition-transform" />
         <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full animate-pulse" />
@@ -152,15 +153,9 @@ export const LiveChatWidget: React.FC = () => {
         {/* Các nút hành động Header */}
         <div className="flex items-center gap-1 text-indigo-100">
           <button
-            onClick={handleResetChat}
-            className="p-1.5 rounded-xl hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
-            title="Làm mới / Bắt đầu hội thoại mới"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-          <button
             onClick={fetchMessages}
             className="p-1.5 rounded-xl hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+            aria-label="Đồng bộ tin nhắn"
             title="Đồng bộ lại"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -168,6 +163,7 @@ export const LiveChatWidget: React.FC = () => {
           <button
             onClick={() => setWidgetOpen(false)}
             className="p-1.5 rounded-xl hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+            aria-label="Thu nhỏ khung chat"
             title="Thu nhỏ"
           >
             <Minus className="w-4 h-4" />
@@ -175,6 +171,7 @@ export const LiveChatWidget: React.FC = () => {
           <button
             onClick={() => setWidgetOpen(false)}
             className="p-1.5 rounded-xl hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+            aria-label="Đóng khung chat"
             title="Đóng"
           >
             <X className="w-4 h-4" />
@@ -218,7 +215,7 @@ export const LiveChatWidget: React.FC = () => {
               {/* Nút bấm nhanh (Quick Replies) */}
               {!isUser && m.quickReplies && m.quickReplies.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-0.5 max-w-[95%]">
-                  {m.quickReplies.map((qr: any) => (
+                  {m.quickReplies.map((qr) => (
                     <button
                       key={qr.id || qr.label}
                       onClick={() => handleSend(qr.label)}
@@ -232,6 +229,12 @@ export const LiveChatWidget: React.FC = () => {
             </div>
           );
         })}
+
+        {widgetError && (
+          <p role="status" className="rounded-xl bg-rose-50 px-3 py-2 text-[11px] text-rose-700 dark:bg-rose-950/50 dark:text-rose-300">
+            {widgetError}
+          </p>
+        )}
 
         {loading && (
           <div className="flex justify-start">
@@ -265,6 +268,7 @@ export const LiveChatWidget: React.FC = () => {
       <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
         <input
           type="text"
+          aria-label="Tin nhắn gửi tới DHT ChatAI"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
@@ -276,6 +280,7 @@ export const LiveChatWidget: React.FC = () => {
           disabled={loading || !input.trim()}
           className="w-10 h-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl flex items-center justify-center transition-all disabled:opacity-40 disabled:hover:bg-indigo-600 shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer flex-shrink-0"
           title="Gửi tin nhắn"
+          aria-label="Gửi tin nhắn"
         >
           <Send className="w-4 h-4" />
         </button>

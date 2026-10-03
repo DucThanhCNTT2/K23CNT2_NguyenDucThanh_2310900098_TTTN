@@ -1,13 +1,18 @@
 ﻿import mongoose from 'mongoose';
+import { env } from '../../config/env';
+import { logInternalError } from '../../httpErrors';
 
 export const connectDB = async () => {
-  const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/dht_chatai';
   try {
-    const conn = await mongoose.connect(mongoURI, {
+    const conn = await mongoose.connect(env.mongoUri, {
       serverSelectionTimeoutMS: 3000
     });
     console.log(`✅ [MongoDB] Kết nối cơ sở dữ liệu thành công: ${conn.connection.host}`);
-  } catch (error: any) {
-    console.warn(`⚠️ [MongoDB] Chưa thể kết nối tới MongoDB (${error.message}). Hệ thống sẽ chuyển sang chế độ In-Memory Mock Data.`);
+  } catch (error) {
+    if (process.env.NODE_ENV === 'production') {
+      throw error;
+    }
+    logInternalError(error, 'MongoDB connection');
+    console.warn('MongoDB unavailable; using development mock data.');
   }
 };

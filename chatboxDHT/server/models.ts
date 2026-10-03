@@ -5,12 +5,28 @@ const model = <T extends mongoose.Schema>(name: string, schema: T) =>
 
 export const User = model('User', new mongoose.Schema({
   name: { type: String, required: true }, email: { type: String, required: true, unique: true },
-  password: { type: String, required: true }, avatar: { type: String, default: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' },
+  password: { type: String }, avatar: { type: String, default: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' },
+  socialAccounts: [{
+    provider: { type: String, enum: ['google', 'facebook', 'github'], required: true },
+    providerId: { type: String, required: true }
+  }],
+  tokenVersion: { type: Number, default: 0 },
   role: { type: String, enum: ['admin', 'agent', 'supervisor', 'user'], default: 'user' },
   companyName: { type: String, default: 'DHT AI Solution Corp' }, phone: { type: String, default: '' },
   plan: { type: String, enum: ['Starter', 'Pro', 'Enterprise'], default: 'Pro' }, extraMessages: { type: Number, default: 0 },
   isOnline: { type: Boolean, default: true }, passwordResetCodeHash: String, passwordResetCodeExpiresAt: Date,
   passwordResetTokenHash: String, passwordResetTokenExpiresAt: Date
+}, { timestamps: true }));
+
+User.schema.index(
+  { 'socialAccounts.provider': 1, 'socialAccounts.providerId': 1 },
+  { unique: true, sparse: true }
+);
+
+export const OAuthLoginTicket = model('OAuthLoginTicket', new mongoose.Schema({
+  ticketHash: { type: String, required: true, unique: true },
+  userId: { type: String, required: true },
+  expiresAt: { type: Date, required: true, expires: 0 }
 }, { timestamps: true }));
 
 export const Conversation = model('Conversation', new mongoose.Schema({

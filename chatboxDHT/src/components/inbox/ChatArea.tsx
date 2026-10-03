@@ -8,6 +8,8 @@ import {
   CheckCircle2, 
   Check, 
   CheckCheck,
+  RotateCcw,
+  XCircle,
   Sparkles
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
@@ -75,7 +77,7 @@ export const ChatArea: React.FC = () => {
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative flex-shrink-0">
             <img
-              src={activeConversation.customer.avatar}
+              src={activeConversation.customer.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
               alt={activeConversation.customer.name}
               className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700"
             />
@@ -239,10 +241,30 @@ export const ChatArea: React.FC = () => {
                   {/* Status Indicator */}
                   {!isUser && (
                     <div className="flex items-center justify-end gap-1 mt-1 text-[10px] text-slate-400 px-1">
-                      {msg.status === 'sent' && <Check className="w-3 h-3 text-slate-400" />}
-                      {msg.status === 'delivered' && <CheckCheck className="w-3 h-3 text-slate-400" />}
-                      {msg.status === 'seen' && <CheckCheck className="w-3 h-3 text-emerald-500" />}
-                      <span>{msg.status === 'seen' ? 'Đã xem' : 'Đã gửi'}</span>
+                      {msg.status === 'failed' ? (
+                        <>
+                          <XCircle className="w-3 h-3 text-rose-500" />
+                          <span className="text-rose-600">Chưa gửi</span>
+                          {msg.sender === 'agent' && (
+                            <button
+                              type="button"
+                              onClick={() => void sendMessage(activeConversation.id, msg.content, 'agent')}
+                              className="inline-flex items-center gap-1 ml-1 text-rose-600 hover:text-rose-700"
+                              title="Gửi lại tin nhắn"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              Gửi lại
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {msg.status === 'sent' && <Check className="w-3 h-3 text-slate-400" />}
+                          {msg.status === 'delivered' && <CheckCheck className="w-3 h-3 text-slate-400" />}
+                          {msg.status === 'seen' && <CheckCheck className="w-3 h-3 text-emerald-500" />}
+                          <span>{msg.status === 'seen' ? 'Đã xem' : 'Đã gửi'}</span>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

@@ -7,10 +7,37 @@ import {
   UserProfile, 
   UserRole,
   BillingTransaction,
+  BillingPaymentConfig,
   UserAnalyticsData 
 } from '../types';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+function normalizeApiBaseUrl(value?: string): string {
+  const baseUrl = (value || '/api').replace(/\/+$/, '');
+  if (!baseUrl || baseUrl === '/') return '/api';
+  return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL);
+
+export type OAuthProvider = 'google' | 'facebook' | 'github';
+
+export interface WidgetMessage {
+  id: string;
+  sender: 'user' | 'bot' | 'agent';
+  content: string;
+  timestamp?: string;
+  quickReplies?: Array<{ id?: string; label: string; payload?: string }>;
+  cards?: Array<{ image?: string; title: string; price?: string; description?: string }>;
+}
+
+interface WidgetMessageResponse {
+  success: boolean;
+  data: {
+    userMessage: WidgetMessage;
+    botReply: WidgetMessage;
+    reply: string;
+  };
+}
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -34,6 +61,9 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      if (!['/login', '/signup', '/auth/callback'].includes(window.location.pathname)) {
+        window.location.replace('/login?session=expired');
+      }
     }
     return Promise.reject(error);
   }
@@ -46,6 +76,27 @@ export const apiService = {
       '/auth/login',
       { email, password }
     );
+    return res.data;
+  },
+
+  getOAuthProviders: async () => {
+    const res = await apiClient.get<{
+      success: boolean;
+      data: Record<OAuthProvider, boolean>;
+    }>('/auth/oauth/providers');
+    return res.data.data;
+  },
+
+  getOAuthStartUrl: (provider: OAuthProvider) => {
+    return new URL(`${API_BASE_URL}/auth/oauth/${provider}`, window.location.origin).toString();
+  },
+
+  exchangeOAuthLogin: async () => {
+    const res = await apiClient.post<{
+      success: boolean;
+      token: string;
+      user: UserProfile;
+    }>('/auth/oauth/exchange', {}, { withCredentials: true });
     return res.data;
   },
 
@@ -117,41 +168,32 @@ export const apiService = {
   },
 
   getUserUsage: async () => {
-    try {
-      const res = await apiClient.get<{
-        success: boolean;
-        data: {
-          usedMessages: number;
-          maxMessages: number;
-          baseMessages?: number;
-          extraMessages?: number;
-          percentage: number;
-          remainingMessages: number;
-          plan?: string;
-        };
-      }>('/users/usage');
-      return res.data?.data || null;
-    } catch {
-      return null;
-    }
+    const res = await apiClient.get<{
+      success: boolean;
+      data: {
+        usedMessages: number;
+        maxMessages: number;
+        baseMessages?: number;
+        extraMessages?: number;
+        percentage: number;
+        remainingMessages: number;
+        plan?: string;
+      };
+    }>('/users/usage');
+    return res.data?.data || null;
   },
 
   getBillingHistory: async () => {
-    try {
-      const res = await apiClient.get<{ success: boolean; data: BillingTransaction[] }>('/billing/history');
-      return res.data?.data || [];
-    } catch {
-      return [];
-    }
+    const res = await apiClient.get<{ success: boolean; data: BillingTransaction[] }>('/billing/history');
+    return res.data?.data || [];
   },
 
-  purchaseAddon: async (payload: {
-    packId: string;
-    packName: string;
-    messagesCount: number;
-    amount: number;
-    paymentMethod?: string;
-  }) => {
+  getBillingPaymentConfig: async () => {
+    const res = await apiClient.get<{ success: boolean; data: BillingPaymentConfig }>('/billing/payment-config');
+    return res.data?.data || null;
+  },
+
+  purchaseAddon: async (payload: { packId: string }) => {
     const res = await apiClient.post<{
       success: boolean;
       message: string;
@@ -162,12 +204,8 @@ export const apiService = {
   },
 
   getUserBillingAnalytics: async () => {
-    try {
-      const res = await apiClient.get<{ success: boolean; data: UserAnalyticsData }>('/billing/analytics');
-      return res.data?.data || null;
-    } catch {
-      return null;
-    }
+    const res = await apiClient.get<{ success: boolean; data: UserAnalyticsData }>('/billing/analytics');
+    return res.data?.data || null;
   },
 
   getUsers: async () => {
@@ -189,8 +227,8 @@ export const apiService = {
     try {
       const res = await apiClient.get('/health');
       return res.data;
-    } catch (error) {
-      console.error('Health check failed', error);
+    } catch {
+      console.error('Health check request failed.');
       return null;
     }
   },
@@ -198,29 +236,40 @@ export const apiService = {
   // Widget Client APIs
   sendWidgetMessage: async (content: string) => {
     try {
-      const res = await apiClient.post('/widget/send', { content });
+      const res = await apiClient.post<WidgetMessageResponse>(
+        '/widget/send',
+        { content },
+        { timeout: 35000, withCredentials: true }
+      );
       return res.data?.data || null;
-    } catch (error) {
-      console.error('Widget message failed', error);
+    } catch {
+      console.error('Widget message request failed.');
       return null;
     }
+  },
+
+  getWidgetMessages: async () => {
+    const res = await apiClient.get<{ success: boolean; data: WidgetMessage[] }>(
+      '/widget/messages',
+      { withCredentials: true }
+    );
+    return res.data.data;
   },
 
   // Conversation & Message APIs
   sendConversationMessage: async (conversationId: string, content: string, sender: 'user' | 'agent' | 'bot' = 'user') => {
     try {
-      const res = await apiClient.post(`/conversations/${conversationId}/messages`, { content, sender });
+      const res = await apiClient.post(`/conversations/${conversationId}/messages`, { content, sender }, { timeout: 35000 });
       return res.data?.data || null;
     } catch {
       return null;
     }
   },
 
-  getConversations: async (channel?: string, status?: string, search?: string) => {
+getConversations: async (channel?: string, status?: string, search?: string) => {
     const res = await apiClient.get('/conversations', { params: { channel, status, search } });
     return res.data.data;
   },
-
   getMessages: async (conversationId: string) => {
     const res = await apiClient.get(`/conversations/${conversationId}/messages`);
     return res.data.data;
@@ -311,5 +360,121 @@ export const apiService = {
   getAnalytics: async () => {
     const res = await apiClient.get('/analytics');
     return res.data.data;
+  },
+
+  // 4, 21, 27. Channel Customers Management APIs
+  getChannelCustomers: async (channel?: string, search?: string) => {
+    try {
+      const res = await apiClient.get<{ success: boolean; data: any[] }>('/customers', {
+        params: { channel, search }
+      });
+      return res.data.data || [];
+    } catch {
+      return [];
+    }
+  },
+
+  getCustomerById: async (id: string) => {
+    const res = await apiClient.get<{ success: boolean; data: any }>(`/customers/${id}`);
+    return res.data.data;
+  },
+
+  updateCustomer: async (id: string, data: any) => {
+    const res = await apiClient.put<{ success: boolean; data: any }>(`/customers/${id}`, data);
+    return res.data.data;
+  },
+
+  mergeCustomers: async (primaryCustomerId: string, secondaryCustomerId: string) => {
+    const res = await apiClient.post<{ success: boolean; message: string; data: any }>('/customers/merge', {
+      primaryCustomerId,
+      secondaryCustomerId
+    });
+    return res.data;
+  },
+
+  // 8, 9, 10, 24. Channel Config & Integration APIs
+  getChannelConfigs: async () => {
+    try {
+      const res = await apiClient.get<{ success: boolean; data: any[] }>('/channel-config');
+      return res.data.data || [];
+    } catch {
+      return [];
+    }
+  },
+
+  updateChannelConfig: async (channel: string, data: any) => {
+    const res = await apiClient.put<{ success: boolean; message: string; data: any }>(`/channel-config/${channel}`, data);
+    return res.data;
+  },
+
+  testChannelConnection: async (channel: string) => {
+    const res = await apiClient.post<{ success: boolean; channel: string; latencyMs: number; message: string }>(
+      `/channel-config/test-connection/${channel}`
+    );
+    return res.data;
+  },
+
+  simulateChannelMessage: async (payload: { channel: string; senderId?: string; senderName?: string; senderPhone?: string; content: string }) => {
+    const res = await apiClient.post<{ success: boolean; message: string; data: any }>('/channel-config/simulate-message', payload);
+    return res.data;
+  },
+
+  // 26, 28, 29, 30, 31. Testing & Benchmark APIs
+  testIntentAccuracy: async () => {
+    const res = await apiClient.get<{
+      success: boolean;
+      accuracyPercentage: number;
+      passed: number;
+      total: number;
+      avgLatencyMs: number;
+      details: any[];
+    }>('/test-suite/intent-accuracy');
+    return res.data;
+  },
+
+  testCustomQuery: async (text: string) => {
+    const res = await apiClient.post<{
+      success: boolean;
+      query: string;
+      intent: string;
+      confidence: number;
+      entities: any;
+      latencyMs: number;
+      needsHandoff: boolean;
+    }>('/test-suite/query', { text });
+    return res.data;
+  },
+
+  testChannelResponseTime: async (channel: string, message: string) => {
+    const res = await apiClient.post<{
+      success: boolean;
+      channel: string;
+      message: string;
+      botReply: string;
+      totalElapsedMs: number;
+      serverProcessingMs: number;
+      intent: string;
+      handledBy: string;
+    }>('/test-suite/response-time', { channel, message });
+    return res.data;
+  },
+
+  testErrorSimulation: async (errorType: string) => {
+    const res = await apiClient.post<{
+      success: boolean;
+      errorType: string;
+      handled: boolean;
+      message: string;
+    }>('/test-suite/simulate-error', { errorType });
+    return res.data;
+  },
+
+  getSecurityAuditStatus: async () => {
+    const res = await apiClient.get<{
+      success: boolean;
+      securityChecks: Array<{ name: string; status: string; detail: string }>;
+      auditedAt: string;
+    }>('/test-suite/security-audit');
+    return res.data;
   }
 };

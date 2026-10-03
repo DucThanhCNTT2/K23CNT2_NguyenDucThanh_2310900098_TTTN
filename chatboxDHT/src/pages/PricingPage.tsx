@@ -435,9 +435,9 @@ export const PricingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
+    <div className="pricing-page page-enter min-h-screen w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
       {/* Top Header */}
-      <header className="h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between sticky top-0 z-40">
+      <header className="h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between sticky top-0 z-40" data-reveal>
         <button
           onClick={() => navigate(currentUser?.role === 'user' ? '/portal' : '/dashboard/inbox')}
           className="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold transition-all cursor-pointer text-slate-700 dark:text-slate-200 active:scale-95"
@@ -461,9 +461,9 @@ export const PricingPage: React.FC = () => {
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8" data-reveal>
         {/* Banner Giới Thiệu */}
-        <div className="text-center max-w-3xl mx-auto space-y-3">
+        <div className="text-center max-w-3xl mx-auto space-y-3" data-reveal>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800 text-[11px] font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
             <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
             <span>Nâng Cấp Trợ Lý AI Chăm Sóc Khách Hàng 24/7</span>
@@ -530,11 +530,12 @@ export const PricingPage: React.FC = () => {
         </div>
 
         {/* DANH SÁCH CÁC GÓI (GRID 3 CỘT) */}
-<div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+<div className="reveal-group grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
           {displayedPlans.map((plan) => (
             <div
               key={plan.id}
-              className={`p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-900 border ${plan.color} shadow-xl flex flex-col justify-between relative hover:scale-[1.01] transition-all duration-300`}
+              className={`motion-card p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-900 border ${plan.color} shadow-xl flex flex-col justify-between relative hover:scale-[1.01] transition-all duration-300`}
+              data-reveal
             >
               {plan.popular && (
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[10px] font-black uppercase tracking-wider shadow-md">
@@ -580,11 +581,11 @@ export const PricingPage: React.FC = () => {
               {/* Nút hành động Mua & Tư Vấn */}
               <div className="mt-8 space-y-2 pt-2">
                 <button
-                  onClick={() => setSelectedPlan(plan)}
+                  onClick={() => { void handleConsult(plan.name); }}
                   className={`w-full py-3 rounded-2xl text-white text-xs font-bold transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 active:scale-95 ${plan.btnColor}`}
                 >
                   <QrCode className="w-4 h-4" />
-                  <span>Xem Chi Tiết & Quét Mã QR</span>
+                  <span>Gửi yêu cầu tư vấn gói</span>
 </button>
 
                 <button
@@ -605,8 +606,8 @@ export const PricingPage: React.FC = () => {
               <Zap className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="font-extrabold text-xs text-slate-900 dark:text-slate-100">Kích Hoạt Tức Thì</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Tự động cấp dung lượng ngay khi quét mã chuyển khoản.</p>
+              <h4 className="font-extrabold text-xs text-slate-900 dark:text-slate-100">Kích Hoạt Sau Đối Soát</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Dung lượng chỉ được cấp sau khi thanh toán được xác nhận.</p>
             </div>
           </div>
 

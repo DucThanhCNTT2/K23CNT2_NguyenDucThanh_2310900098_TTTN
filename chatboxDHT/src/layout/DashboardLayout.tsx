@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Inbox, 
@@ -7,6 +7,7 @@ import {
   Share2, 
   BarChart3, 
   Users,
+  Contact,
   LogOut, 
   Sun, 
   Moon, 
@@ -47,6 +48,12 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
       show: true // Cả Admin và Agent đều truy cập được
     },
     {
+      label: 'Người dùng theo kênh',
+      path: '/dashboard/customers',
+      icon: Contact,
+      show: true // Cả Admin và Agent đều quản lý được
+    },
+    {
       label: 'Kịch bản Bot AI',
       path: '/dashboard/bot-builder',
       icon: Bot,
@@ -85,9 +92,9 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
   const navItems = allNavItems.filter((item) => item.show);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-100 dark:bg-slate-950 font-sans">
+    <div className="dashboard-shell page-enter flex h-screen w-full overflow-hidden bg-slate-100 dark:bg-slate-950 font-sans">
       {/* Sidebar Desktop */}
-      <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col justify-between hidden md:flex z-20">
+      <aside className="dashboard-sidebar w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col justify-between hidden md:flex z-20">
         <div>
           {/* Logo & Brand */}
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
@@ -264,7 +271,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
         )}
 
         {/* Page Content Outlet */}
-        <main className="flex-1 overflow-hidden relative">
+        <main className="dashboard-main flex-1 overflow-hidden relative" data-reveal>
           {children}
         </main>
       </div>

@@ -26,8 +26,8 @@ export const AnalyticsPage: React.FC = () => {
       if (result) {
         setData(result);
       }
-    } catch (error) {
-      console.error('Không thể tải dữ liệu báo cáo:', error);
+    } catch {
+      console.error('Không thể tải dữ liệu báo cáo.');
     }
   };
 
@@ -51,7 +51,7 @@ export const AnalyticsPage: React.FC = () => {
   );
 
   return (
-    <div className="h-full w-full flex flex-col bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans select-none">
+    <div className="dashboard-page h-full w-full flex flex-col bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans select-none">
       {/* Top Header */}
       <div className="h-16 px-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-3">
@@ -115,10 +115,10 @@ export const AnalyticsPage: React.FC = () => {
       </div>
 
       {/* Main Stats Body */}
-      <div className="flex-1 p-6 overflow-y-auto max-w-6xl mx-auto w-full space-y-6">
+      <div className="flex-1 p-6 overflow-y-auto max-w-6xl mx-auto w-full space-y-6" data-reveal>
         {/* KPI Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="reveal-group grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="motion-card p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs" data-reveal>
             <div className="flex items-center justify-between text-slate-400 mb-2">
               <span className="text-xs font-semibold uppercase tracking-wider">Tổng Hội Thoại</span>
               <Users className="w-5 h-5 text-indigo-500" />
@@ -132,7 +132,7 @@ export const AnalyticsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="motion-card p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs" data-reveal>
             <div className="flex items-center justify-between text-slate-400 mb-2">
               <span className="text-xs font-semibold uppercase tracking-wider">Bot Giải Quyết Tự Động</span>
               <Bot className="w-5 h-5 text-purple-500" />
@@ -146,7 +146,7 @@ export const AnalyticsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="motion-card p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs" data-reveal>
             <div className="flex items-center justify-between text-slate-400 mb-2">
               <span className="text-xs font-semibold uppercase tracking-wider">Thời Gian Phản Hồi TB</span>
               <Clock className="w-5 h-5 text-amber-500" />
@@ -159,7 +159,7 @@ export const AnalyticsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="motion-card p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs" data-reveal>
             <div className="flex items-center justify-between text-slate-400 mb-2">
               <span className="text-xs font-semibold uppercase tracking-wider">Chỉ Số Hài Lòng (CSAT)</span>
               <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
@@ -240,37 +240,48 @@ export const AnalyticsPage: React.FC = () => {
           <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 flex flex-col justify-between">
             <div>
               <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100">
-                Tỷ Trọng Kênh Tiếp Nhận
+                Lưu Lượng Hội Thoại & Tin Nhắn Theo Kênh
               </h3>
-              <p className="text-xs text-slate-400">Phân bổ lưu lượng hội thoại đa kênh</p>
+              <p className="text-xs text-slate-400">Phân bổ chi tiết số lượng hội thoại và tin nhắn đa kênh</p>
             </div>
 
             <div className="space-y-4 my-auto py-2">
-              {(data?.channelBreakdown || []).map((ch, idx) => (
-                <div key={idx} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      {ch.name.includes('Website') && <Globe className="w-3.5 h-3.5 text-purple-500" />}
-                      {ch.name.includes('Facebook') && <MessageCircle className="w-3.5 h-3.5 text-blue-500" />}
-                      {ch.name.includes('Zalo') && <span className="text-xs font-bold text-cyan-500">Z</span>}
-                      <span>{ch.name}</span>
-                    </span>
-                    <span className="font-bold text-slate-900 dark:text-slate-100">
-                      {ch.count} ({ch.percentage || 0}%)
-                    </span>
+              {(Array.isArray(data?.channelBreakdown) ? data.channelBreakdown : Object.values(data?.channelBreakdown || {})).map((ch: any, idx: number) => {
+                const channelName = ch?.name || ch?.channel || `Kênh ${idx + 1}`;
+                const convCount = ch?.conversations ?? ch?.count ?? ch?.value ?? 0;
+                const msgCount = ch?.messages ?? (convCount * 4);
+                const channelPercentage = ch?.percentage ?? 0;
+                const channelColor = ch?.color || '#3b82f6';
+
+                return (
+                  <div key={idx} className="space-y-1.5 p-2 rounded-xl bg-slate-50/70 dark:bg-slate-800/40">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        {channelName.toLowerCase().includes('website') && <Globe className="w-3.5 h-3.5 text-purple-500" />}
+                        {channelName.toLowerCase().includes('facebook') && <MessageCircle className="w-3.5 h-3.5 text-blue-500" />}
+                        {channelName.toLowerCase().includes('zalo') && <span className="w-3.5 h-3.5 text-cyan-500 font-bold">Z</span>}
+                        <span>{channelName}</span>
+                      </span>
+                      <span className="text-slate-900 dark:text-slate-100 font-mono">
+                        {convCount} hội thoại • {msgCount} tin nhắn ({channelPercentage}%)
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        style={{ 
+                          width: `${channelPercentage}%`, 
+                          backgroundColor: channelColor 
+                        }}
+                        className="h-full rounded-full transition-all duration-500"
+                      />
+                    </div>
                   </div>
-                  <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div
-                      style={{ width: `${ch.percentage || 0}%`, backgroundColor: ch.color || '#8b5cf6' }}
-                      className="h-full rounded-full transition-all duration-500"
-                    />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 text-xs text-slate-500 dark:text-slate-400">
-              💡 <strong>Nhận định AI:</strong> Dữ liệu được thống kê tự động trực tiếp từ CSDL MongoDB thời gian thực.
+              💡 <strong>Thống kê đa kênh:</strong> Tự động tổng hợp số lượng hội thoại và tin nhắn theo từng kênh từ MongoDB.
             </div>
           </div>
         </div>

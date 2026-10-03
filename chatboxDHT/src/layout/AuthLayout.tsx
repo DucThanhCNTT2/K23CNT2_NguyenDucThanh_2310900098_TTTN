@@ -13,18 +13,18 @@ export const AuthLayout: React.FC<Props> = ({ children, title, subtitle }) => {
   const { theme, toggleTheme } = useApp();
 
   return (
-    <div className="min-h-screen w-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors">
+    <div className="auth-shell page-enter min-h-screen w-full flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors">
       {/* Left Feature Showcase Panel (hidden on small screens) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-900 p-12 text-white flex-col justify-between relative overflow-hidden">
+      <div className="auth-showcase hidden lg:flex lg:w-1/2 bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-900 p-12 text-white flex-col justify-between relative overflow-hidden">
         {/* Background decorative elements */}
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl"></div>
+        <div className="auth-orb absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl"></div>
+        <div className="auth-orb auth-orb-delay absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 bg-sky-400/10 rounded-full blur-3xl"></div>
 
         {/* Top Logo */}
         <div className="relative z-10 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center text-white shadow-lg">
-              <Sparkles className="w-6 h-6 text-pink-400" />
+            <div className="auth-brand-mark w-10 h-10 rounded-xl bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center text-white shadow-lg">
+              <Sparkles className="w-6 h-6 text-amber-300" />
             </div>
             <div>
               <h2 className="font-black text-xl tracking-tight leading-none">DHT ChatAI</h2>
@@ -42,14 +42,14 @@ export const AuthLayout: React.FC<Props> = ({ children, title, subtitle }) => {
 
         {/* Middle Value Props */}
         <div className="relative z-10 my-auto py-12 space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur border border-white/20 text-xs font-semibold text-pink-300">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur border border-white/20 text-xs font-semibold text-amber-200">
             <Bot className="w-4 h-4" />
             <span>Đột Phá Chăm Sóc Khách Hàng 2026</span>
           </div>
 
           <h1 className="text-4xl font-extrabold tracking-tight leading-tight">
             Một Nền Tảng Chatbot AI <br />
-            <span className="bg-gradient-to-r from-pink-400 via-purple-300 to-indigo-200 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-amber-200 via-[#f8f8f5] to-sky-200 bg-clip-text text-transparent">
               Hội Tụ Website, FB & Zalo
             </span>
           </h1>
@@ -59,14 +59,14 @@ export const AuthLayout: React.FC<Props> = ({ children, title, subtitle }) => {
           </p>
 
           <div className="grid grid-cols-2 gap-4 pt-4">
-            <div className="p-4 rounded-2xl bg-white/10 backdrop-blur border border-white/10">
-              <Zap className="w-5 h-5 text-amber-400 mb-2" />
+            <div className="auth-stat p-4 rounded-2xl bg-white/10 backdrop-blur border border-white/10">
+              <Zap className="w-5 h-5 text-amber-300 mb-2" />
               <div className="text-2xl font-bold">84.6%</div>
               <div className="text-xs text-indigo-200">Tỷ lệ Bot giải quyết tự động</div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white/10 backdrop-blur border border-white/10">
-              <ShieldCheck className="w-5 h-5 text-emerald-400 mb-2" />
+            <div className="auth-stat p-4 rounded-2xl bg-white/10 backdrop-blur border border-white/10">
+              <ShieldCheck className="w-5 h-5 text-sky-200 mb-2" />
               <div className="text-2xl font-bold">8.4 giây</div>
               <div className="text-xs text-indigo-200">Thời gian phản hồi trung bình</div>
             </div>
@@ -88,7 +88,7 @@ export const AuthLayout: React.FC<Props> = ({ children, title, subtitle }) => {
       </div>
 
       {/* Right Form Panel */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-between p-6 sm:p-12 overflow-y-auto">
+      <div className="auth-form-panel w-full lg:w-1/2 flex flex-col justify-between p-6 sm:p-12 overflow-y-auto" data-reveal>
         <div className="flex items-center justify-between">
           <div className="lg:hidden flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center">

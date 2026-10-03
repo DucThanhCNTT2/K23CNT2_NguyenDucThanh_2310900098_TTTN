@@ -22,14 +22,25 @@ export const CrmSidebar: React.FC = () => {
 
   React.useEffect(() => {
     if (activeConversation) {
-      setNotes(activeConversation.customer.notes || []);
-      setTags(activeConversation.customer.tags || []);
+      setNotes(Array.isArray(activeConversation.customer?.notes) ? activeConversation.customer.notes : []);
+      setTags(Array.isArray(activeConversation.customer?.tags) ? activeConversation.customer.tags : []);
     }
   }, [activeConversation]);
 
   if (!activeConversation) return null;
 
-  const customer = activeConversation.customer;
+  const customer = {
+    ...activeConversation.customer,
+    id: activeConversation.customer?.id || 'guest',
+    name: activeConversation.customer?.name || 'Khách hàng mới',
+    avatar: activeConversation.customer?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+    email: activeConversation.customer?.email || 'Chưa cập nhật',
+    phone: activeConversation.customer?.phone || 'Chưa cập nhật',
+    address: activeConversation.customer?.address || 'Chưa cập nhật',
+    totalSpent: activeConversation.customer?.totalSpent || '0 ₫',
+    orders: Array.isArray(activeConversation.customer?.orders) ? activeConversation.customer.orders : [],
+    history: Array.isArray(activeConversation.customer?.history) ? activeConversation.customer.history : []
+  };
 
   const handleAddTag = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +72,9 @@ export const CrmSidebar: React.FC = () => {
         <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
           {customer.name}
         </h3>
-        <p className="text-xs text-slate-400 mt-0.5">Mã KH: {customer.id}</p>
+        <p className="text-xs text-slate-400 mt-0.5">
+          {activeConversation.channel === 'facebook' ? 'Facebook PSID' : 'Mã KH'}: {customer.id}
+        </p>
 
         <div className="mt-3 flex items-center justify-center gap-2">
           <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">

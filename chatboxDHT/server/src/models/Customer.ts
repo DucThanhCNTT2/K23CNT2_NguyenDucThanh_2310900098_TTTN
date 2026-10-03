@@ -1,6 +1,7 @@
-﻿import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ICustomer extends Document {
+  channelUserId: string;
   name: string;
   avatar: string;
   phone: string;
@@ -27,6 +28,7 @@ export interface ICustomer extends Document {
 }
 
 const CustomerSchema = new Schema<ICustomer>({
+  channelUserId: { type: String, required: true, index: true },
   name: { type: String, required: true },
   avatar: { type: String, default: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' },
   phone: { type: String, default: '' },
@@ -35,7 +37,7 @@ const CustomerSchema = new Schema<ICustomer>({
   tags: [{ type: String }],
   notes: [{ type: String }],
   totalSpent: { type: String, default: '0 ₫' },
-  channel: { type: String, enum: ['website', 'facebook', 'zalo'], default: 'website' },
+  channel: { type: String, enum: ['website', 'facebook', 'zalo'], default: 'website', index: true },
   lastActive: { type: String, default: 'Vừa xong' },
   orders: [{
     orderCode: String,
@@ -49,6 +51,10 @@ const CustomerSchema = new Schema<ICustomer>({
     timestamp: String,
     summary: String
   }]
-});
+}, { timestamps: true });
 
-export const Customer = mongoose.model<ICustomer>('Customer', CustomerSchema);
+CustomerSchema.index({ channel: 1, channelUserId: 1 }, { unique: true, sparse: true });
+
+export const Customer = (mongoose.models.Customer as mongoose.Model<ICustomer>) ||
+  mongoose.model<ICustomer>('Customer', CustomerSchema);
+

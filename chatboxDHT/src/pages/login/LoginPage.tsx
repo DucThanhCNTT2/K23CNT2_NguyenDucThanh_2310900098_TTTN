@@ -1,8 +1,9 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles } from 'lucide-react';
 import { AuthLayout } from '../../layout/AuthLayout';
 import { apiService } from '../../services/api';
+import { SocialAuthButtons } from '../../components/auth/SocialAuthButtons';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -10,8 +11,17 @@ export const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-
+  const [errorMsg, setErrorMsg] = useState(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('session') === 'expired') {
+      return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+    }
+    const oauthError = searchParams.get('oauth_error');
+    if (!oauthError) return '';
+    return oauthError === 'cancelled'
+      ? 'Bạn đã hủy đăng nhập bằng nhà cung cấp.'
+      : 'Không thể xác thực tài khoản xã hội. Vui lòng thử lại hoặc đăng nhập bằng email.';
+  });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -38,11 +48,11 @@ export const LoginPage: React.FC = () => {
   return (
     <AuthLayout title="" subtitle="">
       {/* Khung Card cao cấp chuẩn SaaS */}
-      <div className="w-full max-w-md mx-auto bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-8 shadow-2xl shadow-indigo-500/10 space-y-6">
+      <div className="auth-card w-full max-w-md mx-auto bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-8 shadow-2xl shadow-indigo-500/10 space-y-6">
         
         {/* Title gom gọn trong Card */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 mb-1">
+          <div className="auth-emblem inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-[#9a7138] dark:text-amber-300 mb-1">
             <Sparkles className="w-6 h-6" />
           </div>
           <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
@@ -59,6 +69,14 @@ export const LoginPage: React.FC = () => {
             ⚠️ {errorMsg}
           </div>
         )}
+
+        <SocialAuthButtons intent="login" />
+
+        <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+          <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+          <span>Hoặc dùng email</span>
+          <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Ô Email */}
@@ -129,7 +147,7 @@ export const LoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 via-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-2xl font-bold text-sm shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50 cursor-pointer"
+            className="auth-submit w-full py-3.5 px-4 text-white rounded-2xl font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50 cursor-pointer"
           >
             {loading ? (
               <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

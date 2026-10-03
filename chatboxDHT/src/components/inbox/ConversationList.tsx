@@ -100,12 +100,14 @@ export const ConversationList: React.FC = () => {
     const query = (searchQuery || '').toLowerCase();
     const customerName = (conv.customer?.name || '').toLowerCase();
     const customerPhone = conv.customer?.phone || '';
+    const customerId = (conv.customer?.id || '').toLowerCase();
     const lastMsgContent = (conv.lastMessage?.content || '').toLowerCase();
     const tags = Array.isArray(conv.customer?.tags) ? conv.customer.tags : [];
 
     const matchSearch = 
       customerName.includes(query) ||
       customerPhone.includes(query) ||
+      customerId.includes(query) ||
       lastMsgContent.includes(query) ||
       tags.some(t => (t || '').toLowerCase().includes(query));
 

@@ -1,40 +1,48 @@
-import React, { useState, useEffect } from 'react';
-import { apiService } from '../services/api';
+import React, { useState } from 'react';
+import { apiService, type WidgetMessage } from '../services/api';
 
 export default function WidgetPage() {
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<WidgetMessage[]>([
+    {
+      id: 'welcome',
+      sender: 'bot',
+      content: 'Dạ xin chào! Em là trợ lý ảo DHT AI. Em có thể giải đáp mọi thắc mắc về tính năng, bảng giá hoặc hướng dẫn sử dụng 24/7 ạ.'
+    }
+  ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    // Khởi tạo tin nhắn chào mừng ban đầu
-    setMessages([
-      { id: '1', sender: 'bot', content: 'Dạ xin chào! Em là trợ lý ảo DHT AI. Em có thể giải đáp mọi thắc mắc về tính năng, bảng giá hoặc hướng dẫn sử dụng 24/7 ạ.' }
-    ]);
-  }, []);
+  const [error, setError] = useState('');
 
   // Hàm gửi tin nhắn và gọi AI thông minh
   const handleSend = async () => {
-    if (!input.trim() || loading) return;
+    const userText = input.trim();
+    if (!userText || loading) return;
 
-    const userText = input;
     setInput('');
-    
-    // Thêm tin nhắn của người dùng lên giao diện ngay lập tức
-    const newMessages = [...messages, { id: Date.now().toString(), sender: 'user', content: userText }];
-    setMessages(newMessages);
+    const pendingMessage: WidgetMessage = {
+      id: 'pending-user',
+      sender: 'user',
+      content: userText
+    };
+    setMessages((previous) => [...previous, pendingMessage]);
     setLoading(true);
+    setError('');
 
     try {
-      const res = await apiService.sendWidgetMessage(userText);
-      const reply = res?.content || "Dạ em đã ghi nhận thông tin từ Anh/Chị. Hệ thống DHT ChatAI sẵn sàng hỗ trợ Anh/Chị mọi lúc mọi nơi ạ!";
-      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: 'bot', content: reply }]);
+      const result = await apiService.sendWidgetMessage(userText);
+      if (!result) {
+        setMessages((previous) => previous.filter((message) => message.id !== pendingMessage.id));
+        setError('Tin nhắn chưa gửi được. Vui lòng thử lại sau giây lát.');
+        return;
+      }
+      setMessages((previous) => [
+        ...previous.filter((message) => message.id !== pendingMessage.id),
+        result.userMessage,
+        result.botReply
+      ]);
     } catch {
-      setMessages(prev => [...prev, { 
-        id: (Date.now() + 1).toString(), 
-        sender: 'bot', 
-        content: "Dạ DHT ChatAI rất hân hạnh được đồng hành cùng Anh/Chị! Anh/Chị có câu hỏi nào về các gói dịch vụ hay hướng dẫn tích hợp không ạ?" 
-      }]);
+      setMessages((previous) => previous.filter((message) => message.id !== pendingMessage.id));
+      setError('Tin nhắn chưa gửi được. Vui lòng thử lại sau giây lát.');
     } finally {
       setLoading(false);
     }
@@ -61,11 +69,13 @@ export default function WidgetPage() {
             </div>
           ))}
           {loading && <div className="text-xs text-slate-400 italic">Bot AI đang suy nghĩ...</div>}
+          {error && <p role="status" className="text-xs text-rose-700">{error}</p>}
         </div>
 
         <div className="p-3 border-t bg-white flex gap-2">
           <input
             type="text"
+            aria-label="Tin nhắn gửi tới DHT ChatAI"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
@@ -75,6 +85,7 @@ export default function WidgetPage() {
           <button 
             onClick={handleSend} 
             disabled={loading}
+            aria-label="Gửi tin nhắn"
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50"
           >
             Gửi

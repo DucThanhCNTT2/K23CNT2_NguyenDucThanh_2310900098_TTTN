@@ -91,8 +91,8 @@ export const UserProfilePage: React.FC = () => {
             setAvatar(realUser.avatar);
           }
         }
-      } catch (err) {
-        console.error('Lỗi tải thông tin user thật từ server:', err);
+      } catch {
+        console.error('Không thể tải thông tin tài khoản.');
       }
     };
 void fetchRealUserData();
@@ -270,9 +270,9 @@ companyName: companyName.trim()
   const isLocalUploadedAvatar = avatar && avatar.startsWith('data:image');
 
   return (
-    <div className="min-h-screen w-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
+    <div className="profile-page page-enter min-h-screen w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
       {/* Top Navbar */}
-      <header className="h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between sticky top-0 z-40">
+      <header className="h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between sticky top-0 z-40" data-reveal>
         <div className="flex items-center gap-3">
           <button
             onClick={handleBack}
@@ -290,7 +290,7 @@ companyName: companyName.trim()
 
         <button
           onClick={() => navigate('/pricing')}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold shadow-md shadow-indigo-500/20 hover:opacity-95 active:scale-95 transition-all cursor-pointer"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#102f4d] to-[#24445f] text-white text-xs font-bold shadow-md shadow-slate-900/20 hover:opacity-95 active:scale-95 transition-all cursor-pointer"
         >
           <Crown className="w-3.5 h-3.5 text-amber-300" />
           <span>Nâng Cấp Gói</span>
@@ -316,9 +316,9 @@ companyName: companyName.trim()
       )}
 
       {/* Main Content */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-6">
+      <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-6" data-reveal>
         {/* Banner Tổng Quan */}
-        <div className="relative rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 shadow-2xl border border-indigo-500/20 overflow-hidden">
+        <div className="motion-card relative rounded-3xl bg-gradient-to-r from-[#102f4d] via-[#173c5d] to-slate-900 text-white p-6 sm:p-8 shadow-2xl border border-[#bd9457]/30 overflow-hidden" data-reveal>
           <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
           
           <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-6">
@@ -404,7 +404,7 @@ onClick={() => setActiveTab('security')}
 
             {/* TAB 1: THÔNG TIN CƠ BẢN */}
             {activeTab === 'general' && (
-              <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+              <div className="motion-card p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6" data-reveal>
                 <div>
                   <h3 className="font-extrabold text-sm text-slate-900 dark:text-slate-100">Cập Nhật Thông Tin Cá Nhân</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Thông tin này sẽ được lưu vào cơ sở dữ liệu và hiển thị trên toàn hệ thống DHT ChatAI.</p>

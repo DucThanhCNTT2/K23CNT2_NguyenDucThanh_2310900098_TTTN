@@ -2,7 +2,7 @@ export type ChannelType = 'website' | 'facebook' | 'zalo';
 export type ConversationStatus = 'pending' | 'bot_active' | 'assigned' | 'resolved';
 export type Priority = 'low' | 'medium' | 'high';
 export type MessageSenderType = 'user' | 'bot' | 'agent';
-export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'seen';
+export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'seen' | 'failed';
 
 export interface ProductCard {
   id: string;
@@ -166,6 +166,14 @@ export interface BillingTransaction {
   createdAt: string;
 }
 
+export interface BillingPaymentConfig {
+  enabled: boolean;
+  bankId: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+}
+
 export interface AddonPack {
   id: string;
   name: string;
@@ -182,21 +190,18 @@ export interface UserAnalyticsData {
   dailyUsage: Array<{
     day: string;
     date: string;
-    website: number;
-    facebook: number;
-    zalo: number;
     total: number;
-  }>;
+  }> | null;
   channelDistribution: {
     website: number;
     facebook: number;
     zalo: number;
-  };
+  } | null;
   burnRate: {
-    avgDaily: number;
-    estimatedDaysRemaining: number;
-    status: 'good' | 'warning' | 'critical';
+    avgDaily: number | null;
+    estimatedDaysRemaining: number | null;
+    status: 'good' | 'warning' | 'critical' | 'unknown';
   };
-  aiResolutionRate: string;
-  avgResponseTime: string;
+  aiResolutionRate: string | null;
+  avgResponseTime: string | null;
 }
